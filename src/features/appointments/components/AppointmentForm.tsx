@@ -31,6 +31,7 @@ interface AppointmentFormProps {
   appointment?: Appointment
   defaultDate?: Date
   onSubmit: (data: AppointmentFormData) => void
+  onDelete?: () => void
   isLoading?: boolean
 }
 
@@ -38,6 +39,7 @@ export function AppointmentForm({
   appointment,
   defaultDate,
   onSubmit,
+  onDelete,
   isLoading,
 }: AppointmentFormProps) {
   const { profile } = useAuth()
@@ -206,9 +208,23 @@ export function AppointmentForm({
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? 'Salvando...' : appointment ? 'Atualizar' : 'Agendar'}
-        </Button>
+        <div className="flex justify-between pt-2">
+          {appointment && onDelete ? (
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={onDelete}
+              disabled={isLoading}
+            >
+              Excluir
+            </Button>
+          ) : (
+            <div></div>
+          )}
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? 'Salvando...' : appointment ? 'Atualizar' : 'Agendar'}
+          </Button>
+        </div>
       </form>
     </Form>
   )

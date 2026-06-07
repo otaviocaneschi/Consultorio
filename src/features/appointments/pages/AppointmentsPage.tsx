@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { PageHeader } from '@/components/shared/PageHeader'
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { AppointmentCalendar } from '@/features/appointments/components/AppointmentCalendar'
 import { AppointmentForm } from '@/features/appointments/components/AppointmentForm'
 import { useAppointments, useAppointmentMutations } from '@/features/appointments/hooks/useAppointments'
@@ -22,19 +23,26 @@ export function AppointmentsPage() {
   const rangeEnd = endOfMonth(addMonths(new Date(), 2)).toISOString()
 
   const { data: appointments = [], isLoading } = useAppointments(rangeStart, rangeEnd)
-  const { create, update, reschedule } = useAppointmentMutations()
+  const { create, update, reschedule, remove } = useAppointmentMutations()
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Appointment | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | undefined>()
+  const [deleteId, setDeleteId] = useState<string | null>(null)
 
   const handleSubmit = async (formData: AppointmentFormData) => {
     try {
+      // Cria um novo objeto convertendo a data local para o formato ISO completo (com fuso horário)
+      const payload = {
+        ...formData,
+        scheduled_at: new Date(formData.scheduled_at).toISOString()
+      }
+
       if (editing) {
-        await update.mutateAsync({ id: editing.id, data: formData })
+        await update.mutateAsync({ id: editing.id, data: payload })
         toast.success('Agendamento atualizado!')
       } else {
-        await create.mutateAsync(formData)
+        await create.mutateAsync(payload)
         toast.success('Agendamento criado!')
       }
       setDialogOpen(false)
@@ -69,7 +77,6 @@ export function AppointmentsPage() {
       <PageHeader
         title="Agenda"
         description="Gerencie os agendamentos da clínica"
-
       >
         <Button
           onClick={() => {
@@ -114,10 +121,32 @@ export function AppointmentsPage() {
             appointment={editing ?? undefined}
             defaultDate={selectedDate}
             onSubmit={handleSubmit}
+            onDelete={() => setDeleteId(editing!.id)}
             isLoading={create.isPending || update.isPending}
           />
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteId}
+        onOpenChange={() => setDeleteId(null)}
+        title="Excluir agendamento"
+        description="Tem certeza que deseja excluir este agendamento? Esta ação não pode ser desfeita."
+        onConfirm={async () => {
+          if (!deleteId) return
+          try {
+            await remove.mutateAsync(deleteId)
+            toast.success('Agendamento excluído com sucesso!')
+            setDeleteId(null)
+            setDialogOpen(false)
+            setEditing(null) // Garante que o formulário foi limpo
+          } catch (error) {
+            // Agora o toast vai mostrar a mensagem real de erro enviada pelo repositório!
+            toast.error(error instanceof Error ? error.message : 'Erro ao excluir o agendamento')
+          }
+        }}
+        variant="destructive"
+      />
     </div>
   )
 }

@@ -7,7 +7,8 @@ export const appointmentRepository = {
   async findByDateRange(start: string, end: string): Promise<Appointment[]> {
     const { data, error } = await supabase
       .from('appointments')
-      .select('*, patient:patients(*), procedure:procedures(*), professional:profiles(*)')
+      // Adicionamos !professional_id para tirar a ambiguidade do Supabase
+      .select('*, patient:patients(*), procedure:procedures(*), professional:profiles!professional_id(*)')
       .gte('scheduled_at', start)
       .lte('scheduled_at', end)
       .order('scheduled_at')
@@ -18,7 +19,8 @@ export const appointmentRepository = {
   async findById(id: string): Promise<Appointment | null> {
     const { data, error } = await supabase
       .from('appointments')
-      .select('*, patient:patients(*), procedure:procedures(*), professional:profiles(*)')
+      // Adicionamos !professional_id aqui também
+      .select('*, patient:patients(*), procedure:procedures(*), professional:profiles!professional_id(*)')
       .eq('id', id)
       .single()
     if (error) throw error
@@ -91,7 +93,17 @@ export const appointmentRepository = {
   },
 
   async delete(id: string): Promise<void> {
-    const { error } = await supabase.from('appointments').delete().eq('id', id)
+    const { data, error } = await supabase
+      .from('appointments')
+      .delete()
+      .eq('id', id)
+      .select() // Forçamos o Supabase a nos devolver o que foi apagado
+
     if (error) throw error
+    
+    // Se a resposta vier vazia, o banco bloqueou a exclusão por falta de permissão
+    if (!data || data.length === 0) {
+      throw new Error('Acesso negado: Você não tem permissão para excluir agendamentos.')
+    }
   },
 }
