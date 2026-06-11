@@ -47,9 +47,9 @@ export function LoginForm() {
             <Stethoscope className="h-7 w-7 text-primary" />
           </div>
           <div>
-            <CardTitle className="text-2xl">Marcela Caneschi</CardTitle>
+            <CardTitle className="text-2xl">Clínica de Atendimento</CardTitle>
             <CardDescription className="mt-1">
-              Ozonioterapia e Laserterapia
+              Sistema de Gestão
             </CardDescription>
           </div>
         </CardHeader>

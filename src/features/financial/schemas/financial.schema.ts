@@ -11,6 +11,8 @@ export const financialSchema = z.object({
   payment_method: z.string().optional(),
   patient_id: z.string().uuid().optional().nullable(),
   appointment_id: z.string().uuid().optional().nullable(),
+  split_type: z.enum(['100_percent', '50_50', 'custom_margin']).default('100_percent'),
+  shared_with_id: z.string().uuid().optional().nullable(),
   notes: z.string().optional(),
 })
 

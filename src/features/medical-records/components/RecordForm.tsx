@@ -12,6 +12,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { medicalRecordSchema, type MedicalRecordFormData } from '@/features/medical-records/schemas/medical-record.schema'
 import { useProcedures } from '@/features/procedures/hooks/useProcedures'
+import { useMaterials } from '@/features/materials/hooks/useMaterials'
 import { useAuth } from '@/contexts/AuthContext'
 import type { MedicalRecord } from '@/types/database.types'
 
@@ -48,6 +49,7 @@ interface RecordFormProps {
 export function RecordForm({ patientId, record, onSubmit, isLoading }: RecordFormProps) {
   const { profile } = useAuth()
   const { data: procedures = [] } = useProcedures(true)
+  const { data: materials = [] } = useMaterials(true)
 
   const form = useForm<MedicalRecordFormData>({
     resolver: zodResolver(medicalRecordSchema),
@@ -63,11 +65,13 @@ export function RecordForm({ patientId, record, onSubmit, isLoading }: RecordFor
       evolution: record?.evolution ?? '',
       prescriptions: record?.prescriptions ?? '',
       procedure_ids: record?.procedures?.map((p) => p.procedure_id) ?? [],
+      material_ids: record?.materials?.map((m) => m.material_id) ?? [],
       is_confidential: record?.is_confidential ?? false,
     },
   })
 
   const selectedProcedures = form.watch('procedure_ids') ?? []
+  const selectedMaterials = form.watch('material_ids') ?? []
 
   const toggleProcedure = (id: string) => {
     const current = form.getValues('procedure_ids') ?? []
@@ -77,61 +81,97 @@ export function RecordForm({ patientId, record, onSubmit, isLoading }: RecordFor
     )
   }
 
+  const toggleMaterial = (id: string) => {
+    const current = form.getValues('material_ids') ?? []
+    form.setValue(
+      'material_ids',
+      current.includes(id) ? current.filter((m) => m !== id) : [...current, id]
+    )
+  }
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="chief_complaint"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Queixas</FormLabel>
-              <FormControl>
-                <Textarea {...field} rows={2} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="diagnosis"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Diagnóstico</FormLabel>
-              <FormControl>
-                <Textarea {...field} rows={2} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="evolution"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Evolução</FormLabel>
-              <FormControl>
-                <Textarea {...field} rows={3} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="treatment_plan"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Plano de tratamento / Observações</FormLabel>
-              <FormControl>
-                <Textarea {...field} rows={2} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid gap-4 md:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="chief_complaint"
+            render={({ field }) => (
+              <FormItem className="md:col-span-2">
+                <FormLabel>Queixa Principal / Motivo da Consulta</FormLabel>
+                <FormControl>
+                  <Textarea {...field} rows={2} placeholder="O que trouxe o paciente hoje?" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="anamnesis"
+            render={({ field }) => (
+              <FormItem className="md:col-span-2">
+                <FormLabel>Anamnese / Histórico Clínico</FormLabel>
+                <FormControl>
+                  <Textarea {...field} rows={3} placeholder="Histórico da queixa atual, doenças prévias..." />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="evolution"
+            render={({ field }) => (
+              <FormItem className="md:col-span-2">
+                <FormLabel>Evolução (Prontuário de Hoje)</FormLabel>
+                <FormControl>
+                  <Textarea {...field} rows={4} placeholder="O que foi feito ou observado hoje..." />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="diagnosis"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Diagnóstico</FormLabel>
+                <FormControl>
+                  <Textarea {...field} rows={3} placeholder="Hipótese ou diagnóstico fechado" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="treatment_plan"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Plano de Tratamento</FormLabel>
+                <FormControl>
+                  <Textarea {...field} rows={3} placeholder="Próximos passos do tratamento" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="prescriptions"
+            render={({ field }) => (
+              <FormItem className="md:col-span-2">
+                <FormLabel>Prescrições / Orientações</FormLabel>
+                <FormControl>
+                  <Textarea {...field} rows={2} placeholder="Medicamentos ou orientações dadas ao paciente" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
         <div>
           <FormLabel className="mb-2 block">Procedimentos realizados</FormLabel>
           <div className="grid gap-2 sm:grid-cols-2">
@@ -141,6 +181,19 @@ export function RecordForm({ patientId, record, onSubmit, isLoading }: RecordFor
                 checked={selectedProcedures.includes(proc.id)}
                 onCheckedChange={() => toggleProcedure(proc.id)}
                 label={proc.name}
+              />
+            ))}
+          </div>
+        </div>
+        <div>
+          <FormLabel className="mb-2 block">Materiais e Consumíveis utilizados</FormLabel>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {materials.map((mat) => (
+              <CheckboxField
+                key={mat.id}
+                checked={selectedMaterials.includes(mat.id)}
+                onCheckedChange={() => toggleMaterial(mat.id)}
+                label={mat.name}
               />
             ))}
           </div>

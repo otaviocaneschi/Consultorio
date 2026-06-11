@@ -13,6 +13,7 @@ import { FinancialPage } from '@/features/financial/pages/FinancialPage'
 import { ReportsPage } from '@/features/reports/pages/ReportsPage'
 import { UsersPage } from '@/features/users/pages/UsersPage'
 import { SettingsPage } from '@/features/settings/pages/SettingsPage'
+import { MaterialsPage } from '@/features/materials/pages/MaterialsPage'
 
 export const router = createBrowserRouter([
   {
@@ -32,6 +33,7 @@ export const router = createBrowserRouter([
           { path: 'agenda', element: <AppointmentsPage /> },
           { path: 'procedimentos', element: <ProceduresPage /> },
           { path: 'financeiro', element: <FinancialPage /> },
+          { path: 'materiais', element: <MaterialsPage /> },
           { path: 'relatorios', element: <ReportsPage /> },
           {
             path: 'usuarios',

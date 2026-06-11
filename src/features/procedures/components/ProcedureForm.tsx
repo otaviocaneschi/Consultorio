@@ -38,6 +38,7 @@ export function ProcedureForm({ procedure, onSubmit, isLoading }: ProcedureFormP
       category: procedure?.category ?? 'general',
       duration_minutes: procedure?.duration_minutes ?? 60,
       base_price: procedure?.base_price ?? 0,
+      margin_percentage: procedure?.margin_percentage ?? 100,
       is_active: procedure?.is_active ?? true,
     },
   })
@@ -123,6 +124,19 @@ export function ProcedureForm({ procedure, onSubmit, isLoading }: ProcedureFormP
             )}
           />
         </div>
+        <FormField
+          control={form.control}
+          name="margin_percentage"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Repasse (%) - Opcional</FormLabel>
+              <FormControl>
+                <Input type="number" step="0.1" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <FormField
           control={form.control}
           name="is_active"

@@ -45,6 +45,8 @@ export function TransactionForm({
       category: transaction?.category ?? '',
       due_date: transaction?.due_date ?? '',
       payment_method: transaction?.payment_method ?? '',
+      split_type: transaction?.split_type ?? '100_percent',
+      shared_with_id: transaction?.shared_with_id ?? '',
       notes: transaction?.notes ?? '',
     },
   })
@@ -141,6 +143,30 @@ export function TransactionForm({
             </FormItem>
           )}
         />
+        {form.watch('type') === 'income' && (
+          <FormField
+            control={form.control}
+            name="split_type"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Divisão de Receita (Rateio)</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="100_percent">100% (Sem divisão)</SelectItem>
+                    <SelectItem value="50_50">50% / 50% (Partilhado)</SelectItem>
+                    <SelectItem value="custom_margin">Margem Customizada</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
         <FormField
           control={form.control}
           name="payment_method"

@@ -24,6 +24,7 @@ const REPORT_LABELS: Record<ReportType, string> = {
   appointments: 'Atendimentos',
   procedures: 'Procedimentos',
   financial: 'Financeiro',
+  splits: 'Rateio (Repasses)',
 }
 
 export function ReportsPage() {

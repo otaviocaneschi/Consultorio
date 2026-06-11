@@ -12,6 +12,7 @@ export const medicalRecordSchema = z.object({
   evolution: z.string().optional(),
   prescriptions: z.string().optional(),
   procedure_ids: z.array(z.string().uuid()).optional(),
+  material_ids: z.array(z.string().uuid()).optional(),
   is_confidential: z.boolean().default(false),
 })
 

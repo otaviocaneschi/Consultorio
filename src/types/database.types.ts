@@ -102,6 +102,7 @@ export interface Procedure {
   category: ProcedureCategory
   duration_minutes: number
   base_price: number
+  margin_percentage: number
   is_active: boolean
   created_at: string
   updated_at: string
@@ -146,6 +147,7 @@ export interface MedicalRecord {
   updated_at: string
   professional?: Profile
   procedures?: MedicalRecordProcedure[]
+  materials?: MedicalRecordMaterial[]
   attachments?: MedicalRecordAttachment[]
 }
 
@@ -173,13 +175,33 @@ export interface MedicalRecordAttachment {
   created_at: string
 }
 
+export interface Material {
+  id: string
+  name: string
+  cost: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface MedicalRecordMaterial {
+  id: string
+  medical_record_id: string
+  material_id: string
+  cost_at_time: number
+  created_at: string
+  material?: Material
+}
+
 export interface FinancialTransaction {
   id: string
   patient_id: string | null
   appointment_id: string | null
   type: TransactionType
   status: TransactionStatus
+  split_type: '100_percent' | '50_50' | 'custom_margin'
   amount: number
+  split_amount: number | null
   description: string
   category: string | null
   due_date: string | null
@@ -188,9 +210,11 @@ export interface FinancialTransaction {
   reference_number: string | null
   notes: string | null
   created_by: string | null
+  shared_with_id: string | null
   created_at: string
   updated_at: string
   patient?: Patient
+  shared_with?: Profile
 }
 
 export interface Notification {

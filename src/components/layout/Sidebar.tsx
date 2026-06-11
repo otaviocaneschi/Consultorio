@@ -11,6 +11,7 @@ import {
   Settings,
   Stethoscope,
   Users,
+  Package,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -29,6 +30,7 @@ const navItems = [
   { title: "Pacientes", href: "/pacientes", icon: Users },
   { title: "Agenda", href: "/agenda", icon: Calendar },
   { title: "Procedimentos", href: "/procedimentos", icon: Stethoscope },
+  { title: "Materiais", href: "/materiais", icon: Package },
   { title: "Financeiro", href: "/financeiro", icon: DollarSign },
   { title: "Relatórios", href: "/relatorios", icon: FileBarChart },
   { title: "Usuários", href: "/usuarios", icon: ClipboardList },

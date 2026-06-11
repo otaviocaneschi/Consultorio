@@ -4,7 +4,7 @@ import { formatCurrency, formatDate, formatDateTime } from '@/utils/formatters'
 import { APPOINTMENT_STATUS_LABELS, PROCEDURE_CATEGORY_LABELS, TRANSACTION_STATUS_LABELS } from '@/types/enums'
 import type { AppointmentStatus, ProcedureCategory, TransactionStatus } from '@/types/enums'
 
-export type ReportType = 'patients' | 'appointments' | 'procedures' | 'financial'
+export type ReportType = 'patients' | 'appointments' | 'procedures' | 'financial' | 'splits'
 
 export const reportService = {
   async fetchData(type: ReportType, startDate?: string, endDate?: string) {
@@ -71,6 +71,26 @@ export const reportService = {
           patient: t.patient?.full_name ?? '',
         }))
       }
+      case 'splits': {
+        let query = supabase
+          .from('financial_transactions')
+          .select('*, shared_with:profiles!shared_with_id(full_name)')
+          .eq('type', 'income')
+          .neq('split_type', '100_percent')
+          .order('created_at', { ascending: false })
+        if (startDate) query = query.gte('due_date', startDate)
+        if (endDate) query = query.lte('due_date', endDate)
+        const { data, error } = await query
+        if (error) throw error
+        return (data ?? []).map((t) => ({
+          description: t.description,
+          total_amount: formatCurrency(t.amount),
+          split_type: t.split_type === '50_50' ? '50% / 50%' : 'Margem Customizada',
+          shared_with: t.shared_with?.full_name ?? 'Clínica',
+          split_amount: formatCurrency(t.split_amount ?? (t.amount / 2)),
+          date: formatDate(t.due_date ?? t.created_at),
+        }))
+      }
     }
   },
 
@@ -107,6 +127,14 @@ export const reportService = {
         { header: 'Vencimento', key: 'due_date' },
         { header: 'Paciente', key: 'patient' },
       ],
+      splits: [
+        { header: 'Descrição', key: 'description' },
+        { header: 'Valor Total', key: 'total_amount' },
+        { header: 'Tipo de Rateio', key: 'split_type' },
+        { header: 'Partilhado com', key: 'shared_with' },
+        { header: 'Valor do Repasse', key: 'split_amount' },
+        { header: 'Data', key: 'date' },
+      ],
     }
     return columns[type]
   },
@@ -119,6 +147,7 @@ export const reportService = {
       appointments: 'Relatório de Atendimentos',
       procedures: 'Relatório de Procedimentos',
       financial: 'Relatório Financeiro',
+      splits: 'Relatório de Rateio (Repasses)',
     }
     exportToPDF(titles[type], columns, data, `relatorio-${type}-${Date.now()}`)
   },
