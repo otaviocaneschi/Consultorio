@@ -97,7 +97,7 @@ export function ProceduresPage() {
     <div className="space-y-6">
       <PageHeader
         title="Procedimentos"
-        description="Cadastro de procedimentos e serviços da clínica"
+        description="Gerencie seus procedimentos e serviços"
 
       >
         <Button

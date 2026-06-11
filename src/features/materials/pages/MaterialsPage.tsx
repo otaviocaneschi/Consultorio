@@ -89,7 +89,7 @@ export function MaterialsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Materiais e Consumíveis"
-        description="Gerencie o catálogo de materiais e os seus custos base."
+        description="Gerencie seus materiais e custos base."
       >
         <Button
           onClick={() => {

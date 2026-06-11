@@ -103,6 +103,7 @@ export interface Procedure {
   duration_minutes: number
   base_price: number
   margin_percentage: number
+  owner_id: string | null
   is_active: boolean
   created_at: string
   updated_at: string
@@ -179,6 +180,7 @@ export interface Material {
   id: string
   name: string
   cost: number
+  owner_id: string | null
   is_active: boolean
   created_at: string
   updated_at: string

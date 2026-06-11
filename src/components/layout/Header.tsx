@@ -1,4 +1,5 @@
-import { LogOut, Search, Settings, User } from "lucide-react"
+import { LogOut, Settings, User } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -10,7 +11,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
 import { NotificationBell } from "@/components/layout/NotificationBell"
 import { ThemeToggle } from "@/components/layout/ThemeToggle"
 
@@ -18,7 +18,6 @@ interface HeaderProps {
   userName?: string
   userEmail?: string
   userAvatar?: string
-  onSearch?: (query: string) => void
   onSignOut?: () => void
 }
 
@@ -26,9 +25,10 @@ export function Header({
   userName = 'Profissional',
   userEmail = '',
   userAvatar,
-  onSearch,
   onSignOut,
 }: HeaderProps) {
+  const navigate = useNavigate()
+
   const initials = userName
     .split(" ")
     .map((part) => part[0])
@@ -37,17 +37,16 @@ export function Header({
     .toUpperCase()
 
   return (
-    <header className="flex h-16 items-center gap-4 border-b bg-background px-6">
-      <div className="relative flex-1 max-w-md">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          type="search"
-          placeholder="Buscar pacientes, consultas..."
-          className="pl-9"
-          onChange={(event) => onSearch?.(event.target.value)}
-        />
+    <header className="flex h-16 items-center justify-between border-b bg-background px-6">
+      {/* Left side: greeting */}
+      <div className="flex items-center gap-3">
+        <div>
+          <p className="text-sm font-semibold text-foreground leading-tight">{userName}</p>
+          <p className="text-xs text-muted-foreground">{userEmail}</p>
+        </div>
       </div>
 
+      {/* Right side: actions */}
       <div className="flex items-center gap-2">
         <NotificationBell />
         <ThemeToggle />
@@ -55,9 +54,9 @@ export function Header({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-              <Avatar className="h-9 w-9">
+              <Avatar className="h-9 w-9 ring-2 ring-primary/20 transition-all hover:ring-primary/40">
                 {userAvatar && <AvatarImage src={userAvatar} alt={userName} />}
-                <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white text-xs font-bold">
                   {initials}
                 </AvatarFallback>
               </Avatar>
@@ -71,11 +70,11 @@ export function Header({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/configuracoes')}>
               <User className="mr-2 h-4 w-4" />
               Meu perfil
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/configuracoes')}>
               <Settings className="mr-2 h-4 w-4" />
               Configurações
             </DropdownMenuItem>

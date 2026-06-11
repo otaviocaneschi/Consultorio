@@ -6,6 +6,7 @@ export const procedureRepository = {
   async findAll(activeOnly = false): Promise<Procedure[]> {
     let query = supabase.from('procedures').select('*').order('name')
     if (activeOnly) query = query.eq('is_active', true)
+    // RLS handles filtering by owner_id automatically
     const { data, error } = await query
     if (error) throw error
     return (data ?? []) as Procedure[]
@@ -17,8 +18,12 @@ export const procedureRepository = {
     return data as Procedure
   },
 
-  async create(procedure: ProcedureFormData): Promise<Procedure> {
-    const { data, error } = await supabase.from('procedures').insert(procedure).select().single()
+  async create(procedure: ProcedureFormData, ownerId?: string): Promise<Procedure> {
+    const { data, error } = await supabase
+      .from('procedures')
+      .insert({ ...procedure, owner_id: ownerId })
+      .select()
+      .single()
     if (error) throw error
     return data as Procedure
   },

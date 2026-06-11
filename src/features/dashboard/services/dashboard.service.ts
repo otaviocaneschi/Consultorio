@@ -3,7 +3,7 @@ import type { DashboardStats, MonthlyRevenue, TopProcedure } from '@/types/datab
 import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns'
 
 export const dashboardService = {
-  async getStats(): Promise<DashboardStats> {
+  async getStats(userId?: string): Promise<DashboardStats> {
     const now = new Date()
     const todayStart = startOfDay(now).toISOString()
     const todayEnd = endOfDay(now).toISOString()
@@ -11,6 +11,62 @@ export const dashboardService = {
     const weekEnd = endOfWeek(now, { weekStartsOn: 1 }).toISOString()
     const monthStart = startOfMonth(now).toISOString()
     const monthEnd = endOfMonth(now).toISOString()
+
+    // Patients: own patients + shared (primary_dentist_id IS NULL)
+    let patientsQuery = supabase.from('patients').select('id', { count: 'exact', head: true })
+    let activePatientsQuery = supabase.from('patients').select('id', { count: 'exact', head: true }).eq('is_active', true)
+    if (userId) {
+      patientsQuery = patientsQuery.or(`primary_dentist_id.eq.${userId},primary_dentist_id.is.null`)
+      activePatientsQuery = activePatientsQuery.or(`primary_dentist_id.eq.${userId},primary_dentist_id.is.null`)
+    }
+
+    // Appointments: only this professional's
+    let todayApptsQuery = supabase
+      .from('appointments')
+      .select('id', { count: 'exact', head: true })
+      .gte('scheduled_at', todayStart)
+      .lte('scheduled_at', todayEnd)
+      .not('status', 'in', '("cancelled","no_show")')
+    let weekApptsQuery = supabase
+      .from('appointments')
+      .select('id', { count: 'exact', head: true })
+      .gte('scheduled_at', weekStart)
+      .lte('scheduled_at', weekEnd)
+      .not('status', 'in', '("cancelled","no_show")')
+    if (userId) {
+      todayApptsQuery = todayApptsQuery.eq('professional_id', userId)
+      weekApptsQuery = weekApptsQuery.eq('professional_id', userId)
+    }
+
+    // Financial: only this professional's transactions
+    let incomeQuery = supabase
+      .from('financial_transactions')
+      .select('amount')
+      .eq('type', 'income')
+      .eq('status', 'paid')
+      .gte('paid_at', monthStart)
+      .lte('paid_at', monthEnd)
+    let expenseQuery = supabase
+      .from('financial_transactions')
+      .select('amount')
+      .eq('type', 'expense')
+      .eq('status', 'paid')
+      .gte('paid_at', monthStart)
+      .lte('paid_at', monthEnd)
+    let pendingQuery = supabase
+      .from('financial_transactions')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'pending')
+    let overdueQuery = supabase
+      .from('financial_transactions')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'overdue')
+    if (userId) {
+      incomeQuery = incomeQuery.or(`created_by.eq.${userId},shared_with_id.eq.${userId}`)
+      expenseQuery = expenseQuery.or(`created_by.eq.${userId},shared_with_id.eq.${userId}`)
+      pendingQuery = pendingQuery.or(`created_by.eq.${userId},shared_with_id.eq.${userId}`)
+      overdueQuery = overdueQuery.or(`created_by.eq.${userId},shared_with_id.eq.${userId}`)
+    }
 
     const [
       patientsRes,
@@ -22,42 +78,14 @@ export const dashboardService = {
       pendingRes,
       overdueRes,
     ] = await Promise.all([
-      supabase.from('patients').select('id', { count: 'exact', head: true }),
-      supabase.from('patients').select('id', { count: 'exact', head: true }).eq('is_active', true),
-      supabase
-        .from('appointments')
-        .select('id', { count: 'exact', head: true })
-        .gte('scheduled_at', todayStart)
-        .lte('scheduled_at', todayEnd)
-        .not('status', 'in', '("cancelled","no_show")'),
-      supabase
-        .from('appointments')
-        .select('id', { count: 'exact', head: true })
-        .gte('scheduled_at', weekStart)
-        .lte('scheduled_at', weekEnd)
-        .not('status', 'in', '("cancelled","no_show")'),
-      supabase
-        .from('financial_transactions')
-        .select('amount')
-        .eq('type', 'income')
-        .eq('status', 'paid')
-        .gte('paid_at', monthStart)
-        .lte('paid_at', monthEnd),
-      supabase
-        .from('financial_transactions')
-        .select('amount')
-        .eq('type', 'expense')
-        .eq('status', 'paid')
-        .gte('paid_at', monthStart)
-        .lte('paid_at', monthEnd),
-      supabase
-        .from('financial_transactions')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'pending'),
-      supabase
-        .from('financial_transactions')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'overdue'),
+      patientsQuery,
+      activePatientsQuery,
+      todayApptsQuery,
+      weekApptsQuery,
+      incomeQuery,
+      expenseQuery,
+      pendingQuery,
+      overdueQuery,
     ])
 
     const monthlyRevenue = (incomeRes.data ?? []).reduce(
@@ -81,9 +109,9 @@ export const dashboardService = {
     }
   },
 
-  async getTodayAppointments() {
+  async getTodayAppointments(userId?: string) {
     const now = new Date()
-    const { data, error } = await supabase
+    let query = supabase
       .from('appointments')
       .select('*, patient:patients(full_name, phone), procedure:procedures(name)')
       .gte('scheduled_at', startOfDay(now).toISOString())
@@ -91,16 +119,24 @@ export const dashboardService = {
       .not('status', 'in', '("cancelled","no_show")')
       .order('scheduled_at')
       .limit(10)
+    if (userId) {
+      query = query.eq('professional_id', userId)
+    }
+    const { data, error } = await query
     if (error) throw error
     return data ?? []
   },
 
-  async getRecentPatients() {
-    const { data, error } = await supabase
+  async getRecentPatients(userId?: string) {
+    let query = supabase
       .from('patients')
       .select('id, full_name, created_at')
       .order('created_at', { ascending: false })
       .limit(5)
+    if (userId) {
+      query = query.or(`primary_dentist_id.eq.${userId},primary_dentist_id.is.null`)
+    }
+    const { data, error } = await query
     if (error) throw error
     return data ?? []
   },
@@ -120,12 +156,16 @@ export const dashboardService = {
     return (data ?? []) as TopProcedure[]
   },
 
-  async getAppointmentTrend() {
-    const { data, error } = await supabase
+  async getAppointmentTrend(userId?: string) {
+    let query = supabase
       .from('appointments')
       .select('scheduled_at')
       .gte('scheduled_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
       .eq('status', 'completed')
+    if (userId) {
+      query = query.eq('professional_id', userId)
+    }
+    const { data, error } = await query
     if (error) throw error
 
     const byDay: Record<string, number> = {}

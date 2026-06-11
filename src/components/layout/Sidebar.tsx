@@ -4,7 +4,6 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
-  ClipboardList,
   DollarSign,
   FileBarChart,
   LayoutDashboard,
@@ -12,6 +11,7 @@ import {
   Stethoscope,
   Users,
   Package,
+  ClipboardList,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -24,17 +24,18 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { usePermissions } from "@/hooks/usePermissions"
 
-const navItems = [
-  { title: "Dashboard", href: "/", icon: LayoutDashboard },
-  { title: "Pacientes", href: "/pacientes", icon: Users },
-  { title: "Agenda", href: "/agenda", icon: Calendar },
-  { title: "Procedimentos", href: "/procedimentos", icon: Stethoscope },
-  { title: "Materiais", href: "/materiais", icon: Package },
-  { title: "Financeiro", href: "/financeiro", icon: DollarSign },
-  { title: "Relatórios", href: "/relatorios", icon: FileBarChart },
-  { title: "Usuários", href: "/usuarios", icon: ClipboardList },
-  { title: "Configurações", href: "/configuracoes", icon: Settings },
+const allNavItems = [
+  { title: "Dashboard", href: "/", icon: LayoutDashboard, alwaysShow: true },
+  { title: "Pacientes", href: "/pacientes", icon: Users, alwaysShow: true },
+  { title: "Agenda", href: "/agenda", icon: Calendar, alwaysShow: true },
+  { title: "Procedimentos", href: "/procedimentos", icon: Stethoscope, alwaysShow: true },
+  { title: "Materiais", href: "/materiais", icon: Package, alwaysShow: true },
+  { title: "Financeiro", href: "/financeiro", icon: DollarSign, alwaysShow: true },
+  { title: "Relatórios", href: "/relatorios", icon: FileBarChart, alwaysShow: true },
+  { title: "Usuários", href: "/usuarios", icon: ClipboardList, adminOnly: true },
+  { title: "Configurações", href: "/configuracoes", icon: Settings, alwaysShow: true },
 ] as const
 
 interface SidebarProps {
@@ -52,6 +53,7 @@ export function Sidebar({
 }: SidebarProps) {
   const [internalCollapsed, setInternalCollapsed] = useState(false)
   const collapsed = controlledCollapsed ?? internalCollapsed
+  const { isAdmin } = usePermissions()
 
   const toggleCollapsed = () => {
     const next = !collapsed
@@ -59,7 +61,12 @@ export function Sidebar({
     onCollapsedChange?.(next)
   }
 
-  const clinicInitials = clinicName
+  // Filter nav items based on role
+  const navItems = allNavItems.filter(
+    (item) => item.alwaysShow || (item.adminOnly && isAdmin)
+  )
+
+  const initials = (professionalName ?? clinicName)
     .split(' ')
     .map((w) => w[0])
     .slice(0, 2)
@@ -74,6 +81,7 @@ export function Sidebar({
           collapsed ? "w-16" : "w-64"
         )}
       >
+        {/* Header */}
         <div
           className={cn(
             "flex h-16 items-center border-b border-sidebar-border px-4",
@@ -81,11 +89,16 @@ export function Sidebar({
           )}
         >
           {!collapsed && (
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold leading-tight text-sidebar-primary">
-                {professionalName ?? clinicName}
-              </span>
-              <span className="text-xs text-muted-foreground">{clinicName}</span>
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-secondary text-xs font-bold text-white shadow-sm">
+                {initials}
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="truncate text-sm font-semibold leading-tight text-foreground">
+                  {professionalName ?? clinicName}
+                </span>
+                <span className="truncate text-xs text-muted-foreground">{clinicName}</span>
+              </div>
             </div>
           )}
           <Button
@@ -105,6 +118,7 @@ export function Sidebar({
           </Button>
         </div>
 
+        {/* Navigation */}
         <ScrollArea className="flex-1 py-4">
           <nav className="flex flex-col gap-1 px-2">
             {navItems.map((item) => {
@@ -116,16 +130,16 @@ export function Sidebar({
                   end={item.href === "/"}
                   className={({ isActive }) =>
                     cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
                       "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                       isActive
-                        ? "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90 hover:text-sidebar-primary-foreground"
+                        ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm hover:bg-sidebar-primary/90 hover:text-sidebar-primary-foreground"
                         : "text-sidebar-foreground",
                       collapsed && "justify-center px-2"
                     )
                   }
                 >
-                  <Icon className="h-4 w-4 shrink-0" />
+                  <Icon className="h-[18px] w-[18px] shrink-0" />
                   {!collapsed && <span>{item.title}</span>}
                 </NavLink>
               )
@@ -144,6 +158,7 @@ export function Sidebar({
           </nav>
         </ScrollArea>
 
+        {/* Footer */}
         <Separator />
         <div className={cn("p-4", collapsed && "flex justify-center p-2")}>
           {!collapsed ? (
@@ -151,7 +166,9 @@ export function Sidebar({
               © {new Date().getFullYear()} {clinicName}
             </p>
           ) : (
-            <span className="text-xs font-semibold text-sidebar-primary">{clinicInitials}</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-secondary text-xs font-bold text-white shadow-sm">
+              {initials}
+            </div>
           )}
         </div>
       </aside>
