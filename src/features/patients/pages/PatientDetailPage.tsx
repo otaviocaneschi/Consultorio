@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Skeleton } from '@/components/ui/skeleton'
 import { usePatient } from '@/features/patients/hooks/usePatients'
-import { formatDate, formatPhone, getInitials, getWhatsAppLink } from '@/utils/formatters'
+import { formatDate, formatPhone, getInitials, getWhatsAppLink, calculateAge } from '@/utils/formatters'
 import { GENDER_LABELS } from '@/types/enums'
 
 export function PatientDetailPage() {
@@ -102,7 +102,10 @@ export function PatientDetailPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Nascimento</span>
-                  <span>{formatDate(patient.birth_date)}</span>
+                  <span>
+                    {formatDate(patient.birth_date)}
+                    {patient.birth_date && ` (${calculateAge(patient.birth_date)} anos)`}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Sexo</span>
@@ -159,6 +162,14 @@ export function PatientDetailPage() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Convênio</span>
                   <span>{patient.health_insurance || 'Particular'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Peso</span>
+                  <span>{patient.weight ? `${patient.weight} kg` : '—'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Altura</span>
+                  <span>{patient.height ? `${patient.height}` : '—'}</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Alergias: </span>

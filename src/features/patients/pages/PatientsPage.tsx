@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Dialog,
   DialogContent,
@@ -23,6 +24,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { DataTable } from '@/components/shared/DataTable'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { PatientForm } from '@/features/patients/components/PatientForm'
+import { useAuth } from '@/contexts/AuthContext'
 import { usePatients, usePatientMutations } from '@/features/patients/hooks/usePatients'
 import { useDebounce } from '@/hooks/useDebounce'
 import { usePagination } from '@/hooks/usePagination'
@@ -39,8 +41,12 @@ export function PatientsPage() {
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
+  const [dentistFilter, setDentistFilter] = useState<string | 'shared' | undefined>(undefined)
+  const { profile } = useAuth()
+
   const filters = {
     isActive: statusFilter === 'all' ? undefined : statusFilter === 'active',
+    primaryDentistId: dentistFilter,
   }
 
   const { data, isLoading } = usePatients(page, pageSize, debouncedSearch, filters)
@@ -85,6 +91,11 @@ export function PatientsPage() {
       id: 'last_appointment_at',
       header: 'Última consulta',
       cell: (row: Patient) => formatDate(row.last_appointment_at),
+    },
+    {
+      id: 'primary_dentist',
+      header: 'Responsável',
+      cell: (row: Patient) => row.primary_dentist?.full_name ?? 'Partilhado',
     },
     {
       id: 'is_active',
@@ -168,6 +179,21 @@ export function PatientsPage() {
           </SelectContent>
         </Select>
       </div>
+
+      <Tabs
+        value={dentistFilter === undefined ? 'all' : dentistFilter}
+        onValueChange={(v) => {
+          setDentistFilter(v === 'all' ? undefined : v)
+          setPage(1)
+        }}
+        className="w-full"
+      >
+        <TabsList>
+          <TabsTrigger value="all">Todos os Pacientes</TabsTrigger>
+          {profile?.id && <TabsTrigger value={profile.id}>Meus Pacientes</TabsTrigger>}
+          <TabsTrigger value="shared">Partilhados</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {isLoading ? (
         <p className="py-8 text-center text-muted-foreground">Carregando...</p>

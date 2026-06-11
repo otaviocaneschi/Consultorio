@@ -6,6 +6,7 @@ import type { PatientFormData } from '@/features/patients/schemas/patient.schema
 export interface PatientFilters {
   isActive?: boolean
   healthInsurance?: string
+  primaryDentistId?: string | 'shared'
 }
 
 export const patientRepository = {
@@ -19,7 +20,7 @@ export const patientRepository = {
 
     let query = supabase
       .from('patients')
-      .select('*', { count: 'exact' })
+      .select('*, primary_dentist:profiles!primary_dentist_id(id, full_name)', { count: 'exact' })
       .order(sortBy, { ascending: sortOrder === 'asc' })
       .range(from, to)
 
@@ -31,6 +32,13 @@ export const patientRepository = {
     }
     if (filters?.healthInsurance) {
       query = query.ilike('health_insurance', `%${filters.healthInsurance}%`)
+    }
+    if (filters?.primaryDentistId) {
+      if (filters.primaryDentistId === 'shared') {
+        query = query.is('primary_dentist_id', null)
+      } else {
+        query = query.eq('primary_dentist_id', filters.primaryDentistId)
+      }
     }
 
     const { data, error, count } = await query
@@ -47,7 +55,11 @@ export const patientRepository = {
   },
 
   async findById(id: string): Promise<Patient | null> {
-    const { data, error } = await supabase.from('patients').select('*').eq('id', id).single()
+    const { data, error } = await supabase
+      .from('patients')
+      .select('*, primary_dentist:profiles!primary_dentist_id(id, full_name)')
+      .eq('id', id)
+      .single()
     if (error) throw error
     return data as Patient
   },
@@ -89,3 +101,4 @@ export const patientRepository = {
     return data as Patient
   },
 }
+

@@ -81,14 +81,18 @@ export interface Patient {
   emergency_contact_phone: string | null
   health_insurance: string | null
   health_insurance_number: string | null
+  weight: string | null
+  height: string | null
   allergies: string | null
   medical_notes: string | null
   photo_url: string | null
   last_appointment_at: string | null
   is_active: boolean
+  primary_dentist_id: string | null
   created_by: string | null
   created_at: string
   updated_at: string
+  primary_dentist?: Profile
 }
 
 export interface Procedure {

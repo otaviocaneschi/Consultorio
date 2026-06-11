@@ -23,8 +23,8 @@ interface HeaderProps {
 }
 
 export function Header({
-  userName = "Marcela Caneschi",
-  userEmail = "marcela@clinica.com",
+  userName = 'Profissional',
+  userEmail = '',
   userAvatar,
   onSearch,
   onSignOut,

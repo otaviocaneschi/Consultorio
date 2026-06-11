@@ -24,9 +24,17 @@ export const patientSchema = z.object({
   emergency_contact_phone: z.string().optional(),
   health_insurance: z.string().optional(),
   health_insurance_number: z.string().optional(),
+  weight: z.string().optional(),
+  height: z.string().optional(),
   allergies: z.string().optional(),
   medical_notes: z.string().optional(),
+  primary_dentist_id: z
+    .string()
+    .optional()
+    .nullable()
+    .transform((val) => (val === '' ? null : val)),
   is_active: z.boolean().default(true),
 })
 
 export type PatientFormData = z.infer<typeof patientSchema>
+

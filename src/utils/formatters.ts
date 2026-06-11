@@ -1,4 +1,4 @@
-import { format, parseISO } from 'date-fns'
+import { format, parseISO, differenceInYears } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
 export function formatCPF(value: string): string {
@@ -49,6 +49,12 @@ export function formatDateTime(value: string | Date | null | undefined): string 
 export function formatTime(value: string | Date): string {
   const date = typeof value === 'string' ? parseISO(value) : value
   return format(date, 'HH:mm', { locale: ptBR })
+}
+
+export function calculateAge(value: string | Date | null | undefined): number | null {
+  if (!value) return null
+  const date = typeof value === 'string' ? parseISO(value) : value
+  return differenceInYears(new Date(), date)
 }
 
 export function getWhatsAppLink(phone: string, message?: string): string {

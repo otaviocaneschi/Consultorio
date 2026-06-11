@@ -38,11 +38,15 @@ const navItems = [
 interface SidebarProps {
   collapsed?: boolean
   onCollapsedChange?: (collapsed: boolean) => void
+  clinicName?: string
+  professionalName?: string
 }
 
 export function Sidebar({
   collapsed: controlledCollapsed,
   onCollapsedChange,
+  clinicName = 'Clínica',
+  professionalName,
 }: SidebarProps) {
   const [internalCollapsed, setInternalCollapsed] = useState(false)
   const collapsed = controlledCollapsed ?? internalCollapsed
@@ -52,6 +56,13 @@ export function Sidebar({
     setInternalCollapsed(next)
     onCollapsedChange?.(next)
   }
+
+  const clinicInitials = clinicName
+    .split(' ')
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -70,9 +81,9 @@ export function Sidebar({
           {!collapsed && (
             <div className="flex flex-col">
               <span className="text-sm font-semibold leading-tight text-sidebar-primary">
-                Marcela Caneschi
+                {professionalName ?? clinicName}
               </span>
-              <span className="text-xs text-muted-foreground">Clínica</span>
+              <span className="text-xs text-muted-foreground">{clinicName}</span>
             </div>
           )}
           <Button
@@ -135,10 +146,10 @@ export function Sidebar({
         <div className={cn("p-4", collapsed && "flex justify-center p-2")}>
           {!collapsed ? (
             <p className="text-xs text-muted-foreground">
-              © {new Date().getFullYear()} Marcela Caneschi
+              © {new Date().getFullYear()} {clinicName}
             </p>
           ) : (
-            <span className="text-xs font-semibold text-sidebar-primary">MC</span>
+            <span className="text-xs font-semibold text-sidebar-primary">{clinicInitials}</span>
           )}
         </div>
       </aside>

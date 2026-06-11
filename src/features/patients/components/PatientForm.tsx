@@ -22,6 +22,7 @@ import { Switch } from '@/components/ui/switch'
 import { patientSchema, type PatientFormData } from '@/features/patients/schemas/patient.schema'
 import { GENDER_LABELS } from '@/types/enums'
 import { formatCPF, formatCEP, formatPhone } from '@/utils/formatters'
+import { useProfessionals } from '@/hooks/useProfessionals'
 import type { Patient } from '@/types/database.types'
 
 interface PatientFormProps {
@@ -31,6 +32,8 @@ interface PatientFormProps {
 }
 
 export function PatientForm({ patient, onSubmit, isLoading }: PatientFormProps) {
+  const { data: professionals = [], isLoading: isLoadingProfessionals } = useProfessionals()
+
   const form = useForm<PatientFormData>({
     resolver: zodResolver(patientSchema),
     defaultValues: {
@@ -53,8 +56,11 @@ export function PatientForm({ patient, onSubmit, isLoading }: PatientFormProps) 
       emergency_contact_phone: patient?.emergency_contact_phone ?? '',
       health_insurance: patient?.health_insurance ?? '',
       health_insurance_number: patient?.health_insurance_number ?? '',
+      weight: patient?.weight ?? '',
+      height: patient?.height ?? '',
       allergies: patient?.allergies ?? '',
       medical_notes: patient?.medical_notes ?? '',
+      primary_dentist_id: patient?.primary_dentist_id ?? null,
       is_active: patient?.is_active ?? true,
     },
   })
@@ -189,6 +195,35 @@ export function PatientForm({ patient, onSubmit, isLoading }: PatientFormProps) 
           />
           <FormField
             control={form.control}
+            name="primary_dentist_id"
+            render={({ field }) => (
+              <FormItem className="md:col-span-2">
+                <FormLabel>Profissional Responsável</FormLabel>
+                <Select
+                  onValueChange={(val) => field.onChange(val === '__shared__' ? null : val)}
+                  value={field.value ?? '__shared__'}
+                  disabled={isLoadingProfessionals}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder={isLoadingProfessionals ? "A carregar..." : "Selecione o profissional"} />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="__shared__">Partilhado (Toda a clínica)</SelectItem>
+                    {professionals.map((prof) => (
+                      <SelectItem key={prof.id} value={prof.id}>
+                        {prof.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
             name="address_zip"
             render={({ field }) => (
               <FormItem>
@@ -289,6 +324,32 @@ export function PatientForm({ patient, onSubmit, isLoading }: PatientFormProps) 
                 <FormLabel>Nº do convênio</FormLabel>
                 <FormControl>
                   <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="weight"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Peso (kg)</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="height"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Altura</FormLabel>
+                <FormControl>
+                  <Input placeholder="ex: 1.75m" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
