@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { PageHeader } from '@/components/shared/PageHeader'
-import { DataTable } from '@/components/shared/DataTable'
+import { DataTable, type DataTableColumn } from '@/components/shared/DataTable'
 import { formatCurrency } from '@/utils/formatters'
 import { useMaterials, useMaterialMutations } from '@/features/materials/hooks/useMaterials'
 import { MaterialForm } from '@/features/materials/components/MaterialForm'
@@ -40,39 +40,42 @@ export function MaterialsPage() {
     }
   }
 
-  const columns = [
+  const columns: DataTableColumn<Material>[] = [
     {
+      id: 'name',
       accessorKey: 'name',
       header: 'Nome do Material',
     },
     {
+      id: 'cost',
       accessorKey: 'cost',
       header: 'Custo',
-      cell: ({ row }: any) => formatCurrency(row.original.cost),
+      cell: (row: Material) => formatCurrency(row.cost),
     },
     {
+      id: 'is_active',
       accessorKey: 'is_active',
       header: 'Status',
-      cell: ({ row }: any) => (
+      cell: (row: Material) => (
         <span
-          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-            row.original.is_active
+          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${row.is_active
               ? 'bg-green-100 text-green-800'
               : 'bg-red-100 text-red-800'
-          }`}
+            }`}
         >
-          {row.original.is_active ? 'Ativo' : 'Inativo'}
+          {row.is_active ? 'Ativo' : 'Inativo'}
         </span>
       ),
     },
     {
       id: 'actions',
-      cell: ({ row }: any) => (
+      header: '',
+      cell: (row: Material) => (
         <Button
           variant="ghost"
           size="sm"
           onClick={() => {
-            setEditing(row.original)
+            setEditing(row)
             setDialogOpen(true)
           }}
         >
