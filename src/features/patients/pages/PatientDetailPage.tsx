@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Skeleton } from '@/components/ui/skeleton'
-import { usePatient, usePatientMutations } from '@/features/patients/hooks/usePatients'
+import { usePatient } from '@/features/patients/hooks/usePatients'
 import { usePatientAppointments } from '@/features/appointments/hooks/useAppointments'
 import { formatDate, formatPhone, getInitials, getWhatsAppLink, calculateAge } from '@/utils/formatters'
 import { format, parseISO } from 'date-fns'
@@ -18,7 +18,6 @@ export function PatientDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { data: patient, isLoading } = usePatient(id || '')
   const { data: appointments = [] } = usePatientAppointments(id || '')
-  const mutations = usePatientMutations()
 
   if (isLoading) {
     return (
