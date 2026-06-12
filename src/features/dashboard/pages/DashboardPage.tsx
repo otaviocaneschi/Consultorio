@@ -11,7 +11,6 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 
-import { PageHeader } from '@/components/shared/PageHeader'
 import { StatCard } from '@/components/shared/StatCard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'

@@ -63,7 +63,7 @@ export function Sidebar({
 
   // Filter nav items based on role
   const navItems = allNavItems.filter(
-    (item) => item.alwaysShow || (item.adminOnly && isAdmin)
+    (item: any) => item.alwaysShow || (item.adminOnly && isAdmin)
   )
 
   const initials = (professionalName ?? clinicName)
