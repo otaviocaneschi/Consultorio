@@ -11,6 +11,14 @@ export function useAppointments(start: string, end: string) {
   })
 }
 
+export function usePatientAppointments(patientId: string) {
+  return useQuery({
+    queryKey: ['appointments', 'patient', patientId],
+    queryFn: () => appointmentService.getByPatientId(patientId),
+    enabled: !!patientId,
+  })
+}
+
 export function useAppointmentMutations() {
   const queryClient = useQueryClient()
   const { user } = useAuth()

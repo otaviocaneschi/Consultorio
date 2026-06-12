@@ -7,13 +7,18 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Skeleton } from '@/components/ui/skeleton'
-import { usePatient } from '@/features/patients/hooks/usePatients'
+import { usePatient, usePatientMutations } from '@/features/patients/hooks/usePatients'
+import { usePatientAppointments } from '@/features/appointments/hooks/useAppointments'
 import { formatDate, formatPhone, getInitials, getWhatsAppLink, calculateAge } from '@/utils/formatters'
-import { GENDER_LABELS } from '@/types/enums'
+import { format, parseISO } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+import { GENDER_LABELS, APPOINTMENT_STATUS_LABELS } from '@/types/enums'
 
 export function PatientDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const { data: patient, isLoading } = usePatient(id)
+  const { data: patient, isLoading } = usePatient(id || '')
+  const { data: appointments = [] } = usePatientAppointments(id || '')
+  const mutations = usePatientMutations()
 
   if (isLoading) {
     return (
@@ -186,8 +191,55 @@ export function PatientDetailPage() {
 
         <TabsContent value="agendamentos" className="mt-4">
           <Card>
-            <CardContent className="py-8 text-center text-muted-foreground">
-              Histórico de agendamentos disponível na página de Agenda.
+            <CardHeader>
+              <CardTitle>Histórico de Agendamentos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {appointments.length === 0 ? (
+                <div className="py-8 text-center text-muted-foreground">
+                  Nenhum agendamento encontrado para este paciente.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {appointments.map((apt) => (
+                    <div key={apt.id} className="rounded-lg border p-4 shadow-sm">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between border-b pb-2 mb-2 gap-2">
+                        <div>
+                          <p className="font-medium text-lg text-primary">
+                            {format(parseISO(apt.scheduled_at), "dd 'de' MMMM 'de' yyyy, 'às' HH:mm", { locale: ptBR })}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Procedimento: <span className="font-medium text-foreground">{apt.procedure?.name || 'Não informado'}</span>
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-primary/10 text-primary">
+                            {APPOINTMENT_STATUS_LABELS[apt.status]}
+                          </span>
+                          <p className="text-xs text-muted-foreground mt-1">Duração: {apt.duration_minutes} min</p>
+                        </div>
+                      </div>
+                      
+                      {/* Materiais Usados */}
+                      <div className="mt-3">
+                        <p className="text-sm font-medium mb-1">Materiais Utilizados:</p>
+                        {(apt as any).materials && (apt as any).materials.length > 0 ? (
+                          <ul className="text-sm space-y-1 bg-muted/50 p-3 rounded-md">
+                            {(apt as any).materials.map((m: any, index: number) => (
+                              <li key={index} className="flex justify-between border-b last:border-0 pb-1 last:pb-0">
+                                <span>{m.material?.name || 'Material desconhecido'}</span>
+                                <span className="font-medium text-muted-foreground">{m.quantity} un.</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-sm text-muted-foreground italic">Nenhum material registrado neste atendimento.</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

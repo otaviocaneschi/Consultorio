@@ -80,7 +80,7 @@ export function FinancialPage() {
     {
       id: 'amount',
       header: 'Valor',
-      cell: (row: FinancialTransaction) => formatCurrency(row.amount),
+      cell: (row: FinancialTransaction) => formatCurrency(row.split_amount !== null ? row.split_amount : row.amount),
     },
     {
       id: 'due_date',

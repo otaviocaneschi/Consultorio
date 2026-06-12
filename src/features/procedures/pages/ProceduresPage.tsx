@@ -52,11 +52,6 @@ export function ProceduresPage() {
       cell: (row: Procedure) => PROCEDURE_CATEGORY_LABELS[row.category],
     },
     {
-      id: 'duration_minutes',
-      header: 'Duração',
-      cell: (row: Procedure) => `${row.duration_minutes} min`,
-    },
-    {
       id: 'base_price',
       header: 'Valor',
       cell: (row: Procedure) => formatCurrency(row.base_price),

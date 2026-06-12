@@ -56,7 +56,7 @@ export const financialRepository = {
   },
 
   async getSummary(startDate?: string, endDate?: string) {
-    let query = supabase.from('financial_transactions').select('type, status, amount')
+    let query = supabase.from('financial_transactions').select('type, status, amount, split_amount')
     if (startDate) query = query.gte('due_date', startDate)
     if (endDate) query = query.lte('due_date', endDate)
 
@@ -67,10 +67,10 @@ export const financialRepository = {
     return {
       totalIncome: transactions
         .filter((t) => t.type === 'income' && t.status === 'paid')
-        .reduce((sum, t) => sum + Number(t.amount), 0),
+        .reduce((sum, t) => sum + Number(t.split_amount !== null ? t.split_amount : t.amount), 0),
       totalExpense: transactions
         .filter((t) => t.type === 'expense' && t.status === 'paid')
-        .reduce((sum, t) => sum + Number(t.amount), 0),
+        .reduce((sum, t) => sum + Number(t.split_amount !== null ? t.split_amount : t.amount), 0),
       pending: transactions.filter((t) => t.status === 'pending').length,
       overdue: transactions.filter((t) => t.status === 'overdue').length,
     }

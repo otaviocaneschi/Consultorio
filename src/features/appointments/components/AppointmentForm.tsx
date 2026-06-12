@@ -23,9 +23,51 @@ import {
 import { appointmentSchema, type AppointmentFormData } from '@/features/appointments/schemas/appointment.schema'
 import { usePatients } from '@/features/patients/hooks/usePatients'
 import { useProcedures } from '@/features/procedures/hooks/useProcedures'
+import { useMaterials } from '@/features/materials/hooks/useMaterials'
 import { useAuth } from '@/contexts/AuthContext'
 import { APPOINTMENT_STATUS_LABELS } from '@/types/enums'
 import type { Appointment } from '@/types/database.types'
+
+// Component to select material and quantity
+function MaterialQuantitySelector({
+  materialName,
+  isSelected,
+  quantity,
+  onToggle,
+  onQuantityChange,
+}: {
+  materialName: string
+  isSelected: boolean
+  quantity: number
+  onToggle: (selected: boolean) => void
+  onQuantityChange: (qty: number) => void
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2 text-sm">
+      <label className="flex items-center gap-2 cursor-pointer flex-1">
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={(e) => onToggle(e.target.checked)}
+          className="h-4 w-4 rounded border"
+        />
+        <span className="truncate">{materialName}</span>
+      </label>
+      {isSelected && (
+        <div className="flex items-center gap-1 w-24">
+          <Input
+            type="number"
+            min={1}
+            value={quantity}
+            onChange={(e) => onQuantityChange(parseInt(e.target.value) || 1)}
+            className="h-8 text-xs px-2"
+          />
+          <span className="text-xs text-muted-foreground">un.</span>
+        </div>
+      )}
+    </div>
+  )
+}
 
 interface AppointmentFormProps {
   appointment?: Appointment
@@ -45,6 +87,7 @@ export function AppointmentForm({
   const { profile } = useAuth()
   const { data: patientsData } = usePatients(1, 100)
   const { data: procedures = [] } = useProcedures(true)
+  const { data: materials = [] } = useMaterials(true)
 
   const form = useForm<AppointmentFormData>({
     resolver: zodResolver(appointmentSchema),
@@ -62,10 +105,36 @@ export function AppointmentForm({
       notes: appointment?.notes ?? '',
       internal_notes: appointment?.internal_notes ?? '',
       cancellation_reason: appointment?.cancellation_reason ?? '',
+      // Extraindo do appointment.materials (no select incluímos materials:appointment_materials(material_id, quantity))
+      materials: (appointment as any)?.materials?.map((m: any) => ({
+        material_id: m.material_id,
+        quantity: m.quantity || 1,
+      })) ?? [],
     },
   })
 
   const status = form.watch('status')
+  const selectedMaterials = form.watch('materials') ?? []
+
+  const handleToggleMaterial = (materialId: string, selected: boolean) => {
+    const current = form.getValues('materials') ?? []
+    if (selected) {
+      form.setValue('materials', [...current, { material_id: materialId, quantity: 1 }])
+    } else {
+      form.setValue(
+        'materials',
+        current.filter((m) => m.material_id !== materialId)
+      )
+    }
+  }
+
+  const handleQuantityChange = (materialId: string, quantity: number) => {
+    const current = form.getValues('materials') ?? []
+    form.setValue(
+      'materials',
+      current.map((m) => (m.material_id === materialId ? { ...m, quantity } : m))
+    )
+  }
 
   useEffect(() => {
     if (profile?.id && !appointment) {
@@ -180,6 +249,36 @@ export function AppointmentForm({
             </FormItem>
           )}
         />
+        {status === 'completed' && (
+          <div>
+            <FormLabel className="mb-2 block text-sm font-medium">Materiais utilizados no atendimento</FormLabel>
+            <div className="grid gap-2 sm:grid-cols-2 rounded-md border p-3 bg-muted/50">
+              {materials.length === 0 ? (
+                <p className="text-sm text-muted-foreground col-span-2">Nenhum material cadastrado.</p>
+              ) : (
+                materials.map((mat) => {
+                  const selectedMat = selectedMaterials.find(m => m.material_id === mat.id)
+                  const isSelected = !!selectedMat
+                  const quantity = selectedMat?.quantity || 1
+
+                  return (
+                    <MaterialQuantitySelector
+                      key={mat.id}
+                      materialName={mat.name}
+                      isSelected={isSelected}
+                      quantity={quantity}
+                      onToggle={(selected) => handleToggleMaterial(mat.id, selected)}
+                      onQuantityChange={(qty) => handleQuantityChange(mat.id, qty)}
+                    />
+                  )
+                })
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Selecione os materiais gastos para abater do lucro ou manter o controle.
+            </p>
+          </div>
+        )}
         {status === 'cancelled' && (
           <FormField
             control={form.control}

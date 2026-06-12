@@ -7,6 +7,8 @@ export const appointmentService = {
 
   getById: (id: string) => appointmentRepository.findById(id),
 
+  getByPatientId: (patientId: string) => appointmentRepository.findByPatientId(patientId),
+
   async create(data: AppointmentFormData, userId?: string) {
     const hasConflict = await appointmentRepository.checkConflict(
       data.professional_id,

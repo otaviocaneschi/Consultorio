@@ -41,14 +41,14 @@ export const dashboardService = {
     // Financial: only this professional's transactions
     let incomeQuery = supabase
       .from('financial_transactions')
-      .select('amount')
+      .select('amount, split_amount')
       .eq('type', 'income')
       .eq('status', 'paid')
       .gte('paid_at', monthStart)
       .lte('paid_at', monthEnd)
     let expenseQuery = supabase
       .from('financial_transactions')
-      .select('amount')
+      .select('amount, split_amount')
       .eq('type', 'expense')
       .eq('status', 'paid')
       .gte('paid_at', monthStart)
@@ -62,10 +62,11 @@ export const dashboardService = {
       .select('id', { count: 'exact', head: true })
       .eq('status', 'overdue')
     if (userId) {
-      incomeQuery = incomeQuery.or(`created_by.eq.${userId},shared_with_id.eq.${userId}`)
-      expenseQuery = expenseQuery.or(`created_by.eq.${userId},shared_with_id.eq.${userId}`)
-      pendingQuery = pendingQuery.or(`created_by.eq.${userId},shared_with_id.eq.${userId}`)
-      overdueQuery = overdueQuery.or(`created_by.eq.${userId},shared_with_id.eq.${userId}`)
+      const condition = `shared_with_id.eq.${userId},and(shared_with_id.is.null,created_by.eq.${userId})`
+      incomeQuery = incomeQuery.or(condition)
+      expenseQuery = expenseQuery.or(condition)
+      pendingQuery = pendingQuery.or(condition)
+      overdueQuery = overdueQuery.or(condition)
     }
 
     const [
@@ -89,11 +90,11 @@ export const dashboardService = {
     ])
 
     const monthlyRevenue = (incomeRes.data ?? []).reduce(
-      (sum, t) => sum + Number(t.amount),
+      (sum, t) => sum + Number(userId && t.split_amount !== null ? t.split_amount : t.amount),
       0
     )
     const monthlyExpenses = (expenseRes.data ?? []).reduce(
-      (sum, t) => sum + Number(t.amount),
+      (sum, t) => sum + Number(userId && t.split_amount !== null ? t.split_amount : t.amount),
       0
     )
 

@@ -12,7 +12,6 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { medicalRecordSchema, type MedicalRecordFormData } from '@/features/medical-records/schemas/medical-record.schema'
 import { useProcedures } from '@/features/procedures/hooks/useProcedures'
-import { useMaterials } from '@/features/materials/hooks/useMaterials'
 import { useAuth } from '@/contexts/AuthContext'
 import type { MedicalRecord } from '@/types/database.types'
 
@@ -49,7 +48,6 @@ interface RecordFormProps {
 export function RecordForm({ patientId, record, onSubmit, isLoading }: RecordFormProps) {
   const { profile } = useAuth()
   const { data: procedures = [] } = useProcedures(true)
-  const { data: materials = [] } = useMaterials(true)
 
   const form = useForm<MedicalRecordFormData>({
     resolver: zodResolver(medicalRecordSchema),
@@ -65,27 +63,17 @@ export function RecordForm({ patientId, record, onSubmit, isLoading }: RecordFor
       evolution: record?.evolution ?? '',
       prescriptions: record?.prescriptions ?? '',
       procedure_ids: record?.procedures?.map((p) => p.procedure_id) ?? [],
-      material_ids: record?.materials?.map((m) => m.material_id) ?? [],
       is_confidential: record?.is_confidential ?? false,
     },
   })
 
   const selectedProcedures = form.watch('procedure_ids') ?? []
-  const selectedMaterials = form.watch('material_ids') ?? []
 
   const toggleProcedure = (id: string) => {
     const current = form.getValues('procedure_ids') ?? []
     form.setValue(
       'procedure_ids',
       current.includes(id) ? current.filter((p) => p !== id) : [...current, id]
-    )
-  }
-
-  const toggleMaterial = (id: string) => {
-    const current = form.getValues('material_ids') ?? []
-    form.setValue(
-      'material_ids',
-      current.includes(id) ? current.filter((m) => m !== id) : [...current, id]
     )
   }
 
@@ -181,19 +169,6 @@ export function RecordForm({ patientId, record, onSubmit, isLoading }: RecordFor
                 checked={selectedProcedures.includes(proc.id)}
                 onCheckedChange={() => toggleProcedure(proc.id)}
                 label={proc.name}
-              />
-            ))}
-          </div>
-        </div>
-        <div>
-          <FormLabel className="mb-2 block">Materiais e Consumíveis utilizados</FormLabel>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {materials.map((mat) => (
-              <CheckboxField
-                key={mat.id}
-                checked={selectedMaterials.includes(mat.id)}
-                onCheckedChange={() => toggleMaterial(mat.id)}
-                label={mat.name}
               />
             ))}
           </div>

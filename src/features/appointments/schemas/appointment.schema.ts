@@ -17,6 +17,10 @@ export const appointmentSchema = z.object({
   notes: z.string().optional(),
   internal_notes: z.string().optional(),
   cancellation_reason: z.string().optional(),
+  materials: z.array(z.object({
+    material_id: z.string().uuid(),
+    quantity: z.number().min(1)
+  })).optional(),
 })
 
 export type AppointmentFormData = z.infer<typeof appointmentSchema>

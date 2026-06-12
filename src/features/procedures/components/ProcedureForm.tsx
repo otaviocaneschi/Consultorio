@@ -96,42 +96,14 @@ export function ProcedureForm({ procedure, onSubmit, isLoading }: ProcedureFormP
             </FormItem>
           )}
         />
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="duration_minutes"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Duração (min) *</FormLabel>
-                <FormControl>
-                  <Input type="number" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="base_price"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Valor (R$) *</FormLabel>
-                <FormControl>
-                  <Input type="number" step="0.01" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
         <FormField
           control={form.control}
-          name="margin_percentage"
+          name="base_price"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Repasse (%) - Opcional</FormLabel>
+              <FormLabel>Valor (R$) *</FormLabel>
               <FormControl>
-                <Input type="number" step="0.1" {...field} />
+                <Input type="number" step="0.01" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

@@ -11,9 +11,9 @@ export const procedureSchema = z.object({
     'general',
     'other',
   ]),
-  duration_minutes: z.coerce.number().min(15, 'Duração mínima de 15 minutos'),
+  duration_minutes: z.coerce.number().min(15).default(60).optional(),
   base_price: z.coerce.number().min(0, 'Valor não pode ser negativo'),
-  margin_percentage: z.coerce.number().min(0).max(100, 'Margem deve ser entre 0 e 100').default(100),
+  margin_percentage: z.coerce.number().min(0).max(100).default(100).optional(),
   is_active: z.boolean().default(true),
 })
 
