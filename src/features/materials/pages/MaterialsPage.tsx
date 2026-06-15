@@ -19,7 +19,7 @@ import type { MaterialFormData } from '@/features/materials/schemas/material.sch
 
 export function MaterialsPage() {
   const { data: materials = [], isLoading } = useMaterials()
-  const { create, update } = useMaterialMutations()
+  const { create, update, remove } = useMaterialMutations()
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Material | null>(null)
@@ -37,6 +37,21 @@ export function MaterialsPage() {
       setEditing(null)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Erro ao salvar material')
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Tem certeza que deseja excluir este material?')) {
+      try {
+        await remove.mutateAsync(id)
+        toast.success('Material excluído com sucesso!')
+      } catch (error: any) {
+        if (error?.code === '23503') {
+          toast.error('Este material não pode ser excluído pois já foi utilizado em atendimentos. Tente inativá-lo editando o status.')
+        } else {
+          toast.error(error instanceof Error ? error.message : 'Erro ao excluir material')
+        }
+      }
     }
   }
 
@@ -71,16 +86,27 @@ export function MaterialsPage() {
       id: 'actions',
       header: '',
       cell: (row: Material) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            setEditing(row)
-            setDialogOpen(true)
-          }}
-        >
-          Editar
-        </Button>
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setEditing(row)
+              setDialogOpen(true)
+            }}
+          >
+            Editar
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-red-600 hover:text-red-800 hover:bg-red-50"
+            onClick={() => handleDelete(row.id)}
+            disabled={remove.isPending}
+          >
+            Excluir
+          </Button>
+        </div>
       ),
     },
   ]

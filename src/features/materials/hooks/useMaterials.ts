@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext'
 export function useMaterials(activeOnly = false) {
   const { user } = useAuth()
   return useQuery({
-    queryKey: ['materials', activeOnly, user?.id],
+    queryKey: ['materials', activeOnly],
     queryFn: async () => {
       let query = supabase.from('materials').select('*').order('name')
       if (activeOnly) {
@@ -24,13 +24,12 @@ export function useMaterials(activeOnly = false) {
 
 export function useMaterialMutations() {
   const queryClient = useQueryClient()
-  const { user } = useAuth()
 
   const create = useMutation({
     mutationFn: async (data: MaterialFormData) => {
       const { data: result, error } = await supabase
         .from('materials')
-        .insert([{ ...data, owner_id: user?.id }])
+        .insert([data])
         .select()
         .single()
       if (error) throw error
@@ -57,5 +56,18 @@ export function useMaterialMutations() {
     },
   })
 
-  return { create, update }
+  const remove = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('materials')
+        .delete()
+        .eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['materials'] })
+    },
+  })
+
+  return { create, update, remove }
 }
