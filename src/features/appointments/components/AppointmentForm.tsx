@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { format } from 'date-fns'
@@ -115,6 +115,9 @@ export function AppointmentForm({
 
   const status = form.watch('status')
   const selectedMaterials = form.watch('materials') ?? []
+
+  const [materialSearch, setMaterialSearch] = useState('')
+  const filteredMaterials = materials.filter(m => m.name.toLowerCase().includes(materialSearch.toLowerCase()))
 
   const handleToggleMaterial = (materialId: string, selected: boolean) => {
     const current = form.getValues('materials') ?? []
@@ -252,12 +255,18 @@ export function AppointmentForm({
         {status === 'completed' && (
           <div>
             <FormLabel className="mb-2 block text-sm font-medium">Materiais utilizados no atendimento</FormLabel>
+            <Input 
+              placeholder="Buscar material..."
+              value={materialSearch}
+              onChange={(e) => setMaterialSearch(e.target.value)}
+              className="mb-2 h-8 text-sm"
+            />
             <div className="max-h-[250px] overflow-y-auto rounded-md border p-3 bg-muted/50">
               <div className="grid gap-2 sm:grid-cols-2">
-                {materials.length === 0 ? (
-                  <p className="text-sm text-muted-foreground col-span-2">Nenhum material cadastrado.</p>
+                {filteredMaterials.length === 0 ? (
+                  <p className="text-sm text-muted-foreground col-span-2">Nenhum material encontrado.</p>
                 ) : (
-                  materials.map((mat) => {
+                  filteredMaterials.map((mat) => {
                     const selectedMat = selectedMaterials.find(m => m.material_id === mat.id)
                     const isSelected = !!selectedMat
                     const quantity = selectedMat?.quantity || 1
