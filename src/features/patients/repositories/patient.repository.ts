@@ -65,9 +65,12 @@ export const patientRepository = {
   },
 
   async create(patient: PatientFormData, userId?: string): Promise<Patient> {
+    const cleanData = Object.fromEntries(
+      Object.entries(patient).map(([k, v]) => [k, v === '' ? null : v])
+    )
     const { data, error } = await supabase
       .from('patients')
-      .insert({ ...patient, created_by: userId })
+      .insert({ ...cleanData, created_by: userId })
       .select()
       .single()
     if (error) throw error
@@ -75,9 +78,12 @@ export const patientRepository = {
   },
 
   async update(id: string, patient: Partial<PatientFormData>): Promise<Patient> {
+    const cleanData = Object.fromEntries(
+      Object.entries(patient).map(([k, v]) => [k, v === '' ? null : v])
+    )
     const { data, error } = await supabase
       .from('patients')
-      .update(patient)
+      .update(cleanData)
       .eq('id', id)
       .select()
       .single()
