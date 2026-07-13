@@ -8,7 +8,7 @@ export const appointmentRepository = {
     const { data, error } = await supabase
       .from('appointments')
       // Adicionamos !professional_id para tirar a ambiguidade do Supabase
-      .select('*, patient:patients(*), procedures:appointment_procedures(procedure:procedures(*)), professional:profiles!professional_id(*), materials:appointment_materials(material_id, quantity)')
+      .select('*, patient:patients(*), procedures:appointment_procedures(procedure_id, procedure:procedures(*)), professional:profiles!professional_id(*), materials:appointment_materials(material_id, quantity)')
       .gte('scheduled_at', start)
       .lte('scheduled_at', end)
       .order('scheduled_at')
@@ -20,7 +20,7 @@ export const appointmentRepository = {
     const { data, error } = await supabase
       .from('appointments')
       // Adicionamos !professional_id aqui também
-      .select('*, patient:patients(*), procedures:appointment_procedures(procedure:procedures(*)), professional:profiles!professional_id(*), materials:appointment_materials(material_id, quantity)')
+      .select('*, patient:patients(*), procedures:appointment_procedures(procedure_id, procedure:procedures(*)), professional:profiles!professional_id(*), materials:appointment_materials(material_id, quantity)')
       .eq('id', id)
       .single()
     if (error) throw error
@@ -30,7 +30,7 @@ export const appointmentRepository = {
   async findByPatientId(patientId: string): Promise<Appointment[]> {
     const { data, error } = await supabase
       .from('appointments')
-      .select('*, procedures:appointment_procedures(procedure:procedures(*)), professional:profiles!professional_id(*), materials:appointment_materials(quantity, material:materials(*))')
+      .select('*, procedures:appointment_procedures(procedure_id, procedure:procedures(*)), professional:profiles!professional_id(*), materials:appointment_materials(quantity, material:materials(*))')
       .eq('patient_id', patientId)
       .order('scheduled_at', { ascending: false })
     if (error) throw error
@@ -67,14 +67,17 @@ export const appointmentRepository = {
   },
 
   async create(appointment: AppointmentFormData, userId?: string): Promise<Appointment> {
-    const { materials, procedure_ids, ...payload } = appointment
+    const { materials, procedure_ids, status, ...payload } = appointment
+    
+    // We create the appointment with status 'pending' initially so the trigger doesn't fire yet
     const { data, error } = await supabase
       .from('appointments')
-      .insert({ ...payload, procedure_id: procedure_ids && procedure_ids.length > 0 ? procedure_ids[0] : null, created_by: userId })
-      .select('*, patient:patients(*), procedures:appointment_procedures(procedure:procedures(*)), materials:appointment_materials(material_id, quantity)')
+      .insert({ ...payload, status: status === 'completed' ? 'pending' : status, procedure_id: procedure_ids && procedure_ids.length > 0 ? procedure_ids[0] : null, created_by: userId })
+      .select('*, patient:patients(*), procedures:appointment_procedures(procedure_id, procedure:procedures(*)), materials:appointment_materials(material_id, quantity)')
       .single()
     if (error) throw error
 
+    // Insert procedures
     if (procedure_ids && procedure_ids.length > 0) {
       const { error: procError } = await supabase.from('appointment_procedures').insert(
         procedure_ids.map((pid) => ({
@@ -85,6 +88,7 @@ export const appointmentRepository = {
       if (procError) throw procError
     }
 
+    // Insert materials
     if (materials && materials.length > 0) {
       const { error: matError } = await supabase.from('appointment_materials').insert(
         materials.map((m) => ({
@@ -96,21 +100,43 @@ export const appointmentRepository = {
       if (matError) throw matError
     }
 
+    // If the actual requested status was completed, update it now so the trigger can read the procedures!
+    if (status === 'completed') {
+      const { data: finalData, error: finalError } = await supabase
+        .from('appointments')
+        .update({ status: 'completed' })
+        .eq('id', data.id)
+        .select('*, patient:patients(*), procedures:appointment_procedures(procedure_id, procedure:procedures(*)), materials:appointment_materials(material_id, quantity)')
+        .single()
+      if (finalError) throw finalError
+      return finalData as Appointment
+    }
+
     return data as Appointment
   },
 
   async update(id: string, appointment: Partial<AppointmentFormData>): Promise<Appointment> {
-    const { materials, procedure_ids, ...payload } = appointment
+    const { materials, procedure_ids, status, ...payload } = appointment
     const updatePayload: any = { ...payload }
     if (procedure_ids !== undefined) {
       updatePayload.procedure_id = procedure_ids && procedure_ids.length > 0 ? procedure_ids[0] : null
     }
 
+    // If changing procedures or setting to completed, we should drop it from completed first (to clear old transactions)
+    if (status === 'completed' || procedure_ids !== undefined) {
+       await supabase.from('appointments').update({ status: 'in_progress' }).eq('id', id)
+    }
+
+    // Update the core appointment (but hold off on setting to completed just yet)
+    if (status && status !== 'completed') {
+      updatePayload.status = status
+    }
+    
     const { data, error } = await supabase
       .from('appointments')
       .update(updatePayload)
       .eq('id', id)
-      .select('*, patient:patients(*), procedures:appointment_procedures(procedure:procedures(*)), materials:appointment_materials(material_id, quantity)')
+      .select('*, patient:patients(*), procedures:appointment_procedures(procedure_id, procedure:procedures(*)), materials:appointment_materials(material_id, quantity)')
       .single()
     if (error) throw error
 
@@ -141,6 +167,18 @@ export const appointmentRepository = {
       }
     }
 
+    // Now, if it should be completed, update it to fire the trigger with the new procedures in place
+    if (status === 'completed') {
+      const { data: finalData, error: finalError } = await supabase
+        .from('appointments')
+        .update({ status: 'completed' })
+        .eq('id', id)
+        .select('*, patient:patients(*), procedures:appointment_procedures(procedure_id, procedure:procedures(*)), materials:appointment_materials(material_id, quantity)')
+        .single()
+      if (finalError) throw finalError
+      return finalData as Appointment
+    }
+
     return data as Appointment
   },
 
@@ -153,7 +191,7 @@ export const appointmentRepository = {
       .from('appointments')
       .update({ scheduled_at: scheduledAt, duration_minutes: durationMinutes })
       .eq('id', id)
-      .select('*, patient:patients(*), procedures:appointment_procedures(procedure:procedures(*))')
+      .select('*, patient:patients(*), procedures:appointment_procedures(procedure_id, procedure:procedures(*))')
       .single()
     if (error) throw error
     return data as Appointment
