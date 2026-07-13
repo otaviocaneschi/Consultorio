@@ -94,7 +94,8 @@ export function AppointmentForm({
     defaultValues: {
       patient_id: appointment?.patient_id ?? '',
       professional_id: appointment?.professional_id ?? profile?.id ?? '',
-      procedure_id: appointment?.procedure_id ?? null,
+      procedure_ids: (appointment as any)?.procedures?.map((p: any) => p.procedure_id) ?? 
+        (appointment?.procedure_id ? [appointment.procedure_id] : []),
       scheduled_at: appointment?.scheduled_at
         ? format(new Date(appointment.scheduled_at), "yyyy-MM-dd'T'HH:mm")
         : defaultDate
@@ -115,6 +116,7 @@ export function AppointmentForm({
 
   const status = form.watch('status')
   const selectedMaterials = form.watch('materials') ?? []
+  const selectedProcedures = form.watch('procedure_ids') ?? []
 
   const [materialSearch, setMaterialSearch] = useState('')
   const filteredMaterials = materials.filter(m => m.name.toLowerCase().includes(materialSearch.toLowerCase()))
@@ -137,6 +139,18 @@ export function AppointmentForm({
       'materials',
       current.map((m) => (m.material_id === materialId ? { ...m, quantity } : m))
     )
+  }
+
+  const handleToggleProcedure = (procedureId: string, selected: boolean) => {
+    const current = form.getValues('procedure_ids') ?? []
+    if (selected) {
+      form.setValue('procedure_ids', [...current, procedureId])
+    } else {
+      form.setValue(
+        'procedure_ids',
+        current.filter((id) => id !== procedureId)
+      )
+    }
   }
 
   useEffect(() => {
@@ -174,28 +188,29 @@ export function AppointmentForm({
         />
         <FormField
           control={form.control}
-          name="procedure_id"
-          render={({ field }) => (
+          name="procedure_ids"
+          render={() => (
             <FormItem>
-              <FormLabel>Procedimento</FormLabel>
-              <Select
-                onValueChange={(v) => field.onChange(v === 'none' ? null : v)}
-                value={field.value ?? 'none'}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="none">Nenhum</SelectItem>
-                  {procedures.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FormLabel>Procedimentos</FormLabel>
+              <div className="max-h-[150px] overflow-y-auto rounded-md border p-3 bg-background">
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {procedures.length === 0 ? (
+                    <p className="text-sm text-muted-foreground col-span-2">Nenhum procedimento cadastrado.</p>
+                  ) : (
+                    procedures.map((proc) => (
+                      <label key={proc.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-muted/50 p-1 rounded">
+                        <input
+                          type="checkbox"
+                          checked={selectedProcedures.includes(proc.id)}
+                          onChange={(e) => handleToggleProcedure(proc.id, e.target.checked)}
+                          className="h-4 w-4 rounded border"
+                        />
+                        <span className="truncate">{proc.name}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </div>
               <FormMessage />
             </FormItem>
           )}

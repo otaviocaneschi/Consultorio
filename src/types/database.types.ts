@@ -128,6 +128,14 @@ export interface Appointment {
   patient?: Patient
   procedure?: Procedure
   professional?: Profile
+  procedures?: AppointmentProcedure[]
+}
+
+export interface AppointmentProcedure {
+  appointment_id: string
+  procedure_id: string
+  price: number | null
+  procedure?: Procedure
 }
 
 export interface MedicalRecord {

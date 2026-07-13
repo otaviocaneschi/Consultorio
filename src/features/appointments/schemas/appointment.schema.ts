@@ -3,7 +3,7 @@ import { z } from 'zod'
 export const appointmentSchema = z.object({
   patient_id: z.string().uuid('Selecione um paciente'),
   professional_id: z.string().uuid('Selecione um profissional'),
-  procedure_id: z.string().uuid().optional().nullable(),
+  procedure_ids: z.array(z.string().uuid()).optional().default([]),
   scheduled_at: z.string().min(1, 'Data e hora são obrigatórias'),
   duration_minutes: z.coerce.number().min(15),
   status: z.enum([

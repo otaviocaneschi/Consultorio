@@ -208,7 +208,11 @@ export function PatientDetailPage() {
                             {format(parseISO(apt.scheduled_at), "dd 'de' MMMM 'de' yyyy, 'às' HH:mm", { locale: ptBR })}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            Procedimento: <span className="font-medium text-foreground">{apt.procedure?.name || 'Não informado'}</span>
+                            Procedimentos: <span className="font-medium text-foreground">
+                              {apt.procedures && apt.procedures.length > 0
+                                ? apt.procedures.map((p: any) => p.procedure?.name).filter(Boolean).join(', ')
+                                : apt.procedure?.name || 'Não informado'}
+                            </span>
                           </p>
                         </div>
                         <div className="text-right">
@@ -221,19 +225,53 @@ export function PatientDetailPage() {
                       
                       {/* Materiais Usados */}
                       <div className="mt-3">
-                        <p className="text-sm font-medium mb-1">Materiais Utilizados:</p>
-                        {(apt as any).materials && (apt as any).materials.length > 0 ? (
-                          <ul className="text-sm space-y-1 bg-muted/50 p-3 rounded-md">
-                            {(apt as any).materials.map((m: any, index: number) => (
-                              <li key={index} className="flex justify-between border-b last:border-0 pb-1 last:pb-0">
-                                <span>{m.material?.name || 'Material desconhecido'}</span>
-                                <span className="font-medium text-muted-foreground">{m.quantity} un.</span>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-sm text-muted-foreground italic">Nenhum material registrado neste atendimento.</p>
-                        )}
+                        <div className="flex justify-between items-center mb-1">
+                          <p className="text-sm font-medium">Materiais Utilizados:</p>
+                          {(() => {
+                            const procNames = (apt.procedures || []).map((p: any) => p.procedure?.name?.trim().toLowerCase());
+                            if (apt.procedure) procNames.push(apt.procedure.name?.trim().toLowerCase());
+                            
+                            const mats = ((apt as any).materials || []).filter((m: any) => 
+                              !procNames.includes(m.material?.name?.trim().toLowerCase())
+                            )
+                            if (mats.length === 0) return null
+                            const totalCost = mats.reduce((acc: number, m: any) => acc + ((m.material?.cost || 0) * (m.quantity || 1)), 0)
+                            return <p className="text-sm font-medium text-red-600">Custo total: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalCost)}</p>
+                          })()}
+                        </div>
+                        {(() => {
+                          const procNames = (apt.procedures || []).map((p: any) => p.procedure?.name?.trim().toLowerCase());
+                          if (apt.procedure) procNames.push(apt.procedure.name?.trim().toLowerCase());
+                          
+                          const mats = ((apt as any).materials || []).filter((m: any) => 
+                            !procNames.includes(m.material?.name?.trim().toLowerCase())
+                          )
+                          if (mats.length > 0) {
+                            return (
+                              <ul className="text-sm space-y-1 bg-muted/50 p-3 rounded-md">
+                                {mats.map((m: any, index: number) => {
+                                  const unitCost = m.material?.cost || 0
+                                  const totalCost = unitCost * (m.quantity || 1)
+                                  return (
+                                    <li key={index} className="flex justify-between items-center border-b last:border-0 pb-1 last:pb-0">
+                                      <span>{m.material?.name || 'Material desconhecido'}</span>
+                                      <div className="flex items-center gap-4 text-right">
+                                        <span className="text-xs text-muted-foreground w-20">
+                                          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(unitCost)}/un
+                                        </span>
+                                        <span className="font-medium text-muted-foreground w-12">{m.quantity} un.</span>
+                                        <span className="font-semibold w-24">
+                                          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalCost)}
+                                        </span>
+                                      </div>
+                                    </li>
+                                  )
+                                })}
+                              </ul>
+                            )
+                          }
+                          return <p className="text-sm text-muted-foreground italic">Nenhum material registrado neste atendimento.</p>
+                        })()}
                       </div>
                     </div>
                   ))}

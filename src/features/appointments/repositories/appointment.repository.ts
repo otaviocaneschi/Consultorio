@@ -8,7 +8,7 @@ export const appointmentRepository = {
     const { data, error } = await supabase
       .from('appointments')
       // Adicionamos !professional_id para tirar a ambiguidade do Supabase
-      .select('*, patient:patients(*), procedure:procedures(*), professional:profiles!professional_id(*), materials:appointment_materials(material_id, quantity)')
+      .select('*, patient:patients(*), procedures:appointment_procedures(procedure:procedures(*)), professional:profiles!professional_id(*), materials:appointment_materials(material_id, quantity)')
       .gte('scheduled_at', start)
       .lte('scheduled_at', end)
       .order('scheduled_at')
@@ -20,7 +20,7 @@ export const appointmentRepository = {
     const { data, error } = await supabase
       .from('appointments')
       // Adicionamos !professional_id aqui também
-      .select('*, patient:patients(*), procedure:procedures(*), professional:profiles!professional_id(*), materials:appointment_materials(material_id, quantity)')
+      .select('*, patient:patients(*), procedures:appointment_procedures(procedure:procedures(*)), professional:profiles!professional_id(*), materials:appointment_materials(material_id, quantity)')
       .eq('id', id)
       .single()
     if (error) throw error
@@ -30,7 +30,7 @@ export const appointmentRepository = {
   async findByPatientId(patientId: string): Promise<Appointment[]> {
     const { data, error } = await supabase
       .from('appointments')
-      .select('*, procedure:procedures(*), professional:profiles!professional_id(*), materials:appointment_materials(quantity, material:materials(*))')
+      .select('*, procedures:appointment_procedures(procedure:procedures(*)), professional:profiles!professional_id(*), materials:appointment_materials(quantity, material:materials(*))')
       .eq('patient_id', patientId)
       .order('scheduled_at', { ascending: false })
     if (error) throw error
@@ -67,13 +67,23 @@ export const appointmentRepository = {
   },
 
   async create(appointment: AppointmentFormData, userId?: string): Promise<Appointment> {
-    const { materials, ...payload } = appointment
+    const { materials, procedure_ids, ...payload } = appointment
     const { data, error } = await supabase
       .from('appointments')
-      .insert({ ...payload, created_by: userId })
-      .select('*, patient:patients(*), procedure:procedures(*), materials:appointment_materials(material_id, quantity)')
+      .insert({ ...payload, procedure_id: procedure_ids && procedure_ids.length > 0 ? procedure_ids[0] : null, created_by: userId })
+      .select('*, patient:patients(*), procedures:appointment_procedures(procedure:procedures(*)), materials:appointment_materials(material_id, quantity)')
       .single()
     if (error) throw error
+
+    if (procedure_ids && procedure_ids.length > 0) {
+      const { error: procError } = await supabase.from('appointment_procedures').insert(
+        procedure_ids.map((pid) => ({
+          appointment_id: data.id,
+          procedure_id: pid,
+        }))
+      )
+      if (procError) throw procError
+    }
 
     if (materials && materials.length > 0) {
       const { error: matError } = await supabase.from('appointment_materials').insert(
@@ -90,14 +100,32 @@ export const appointmentRepository = {
   },
 
   async update(id: string, appointment: Partial<AppointmentFormData>): Promise<Appointment> {
-    const { materials, ...payload } = appointment
+    const { materials, procedure_ids, ...payload } = appointment
+    const updatePayload: any = { ...payload }
+    if (procedure_ids !== undefined) {
+      updatePayload.procedure_id = procedure_ids && procedure_ids.length > 0 ? procedure_ids[0] : null
+    }
+
     const { data, error } = await supabase
       .from('appointments')
-      .update(payload)
+      .update(updatePayload)
       .eq('id', id)
-      .select('*, patient:patients(*), procedure:procedures(*), materials:appointment_materials(material_id, quantity)')
+      .select('*, patient:patients(*), procedures:appointment_procedures(procedure:procedures(*)), materials:appointment_materials(material_id, quantity)')
       .single()
     if (error) throw error
+
+    if (procedure_ids !== undefined) {
+      await supabase.from('appointment_procedures').delete().eq('appointment_id', id)
+      if (procedure_ids.length > 0) {
+        const { error: procError } = await supabase.from('appointment_procedures').insert(
+          procedure_ids.map((pid) => ({
+            appointment_id: id,
+            procedure_id: pid,
+          }))
+        )
+        if (procError) throw procError
+      }
+    }
 
     if (materials !== undefined) {
       await supabase.from('appointment_materials').delete().eq('appointment_id', id)
@@ -125,7 +153,7 @@ export const appointmentRepository = {
       .from('appointments')
       .update({ scheduled_at: scheduledAt, duration_minutes: durationMinutes })
       .eq('id', id)
-      .select('*, patient:patients(*), procedure:procedures(*)')
+      .select('*, patient:patients(*), procedures:appointment_procedures(procedure:procedures(*))')
       .single()
     if (error) throw error
     return data as Appointment
