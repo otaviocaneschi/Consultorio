@@ -252,27 +252,29 @@ export function AppointmentForm({
         {status === 'completed' && (
           <div>
             <FormLabel className="mb-2 block text-sm font-medium">Materiais utilizados no atendimento</FormLabel>
-            <div className="grid gap-2 sm:grid-cols-2 rounded-md border p-3 bg-muted/50">
-              {materials.length === 0 ? (
-                <p className="text-sm text-muted-foreground col-span-2">Nenhum material cadastrado.</p>
-              ) : (
-                materials.map((mat) => {
-                  const selectedMat = selectedMaterials.find(m => m.material_id === mat.id)
-                  const isSelected = !!selectedMat
-                  const quantity = selectedMat?.quantity || 1
-
-                  return (
-                    <MaterialQuantitySelector
-                      key={mat.id}
-                      materialName={mat.name}
-                      isSelected={isSelected}
-                      quantity={quantity}
-                      onToggle={(selected) => handleToggleMaterial(mat.id, selected)}
-                      onQuantityChange={(qty) => handleQuantityChange(mat.id, qty)}
-                    />
-                  )
-                })
-              )}
+            <div className="max-h-[250px] overflow-y-auto rounded-md border p-3 bg-muted/50">
+              <div className="grid gap-2 sm:grid-cols-2">
+                {materials.length === 0 ? (
+                  <p className="text-sm text-muted-foreground col-span-2">Nenhum material cadastrado.</p>
+                ) : (
+                  materials.map((mat) => {
+                    const selectedMat = selectedMaterials.find(m => m.material_id === mat.id)
+                    const isSelected = !!selectedMat
+                    const quantity = selectedMat?.quantity || 1
+  
+                    return (
+                      <MaterialQuantitySelector
+                        key={mat.id}
+                        materialName={mat.name}
+                        isSelected={isSelected}
+                        quantity={quantity}
+                        onToggle={(selected) => handleToggleMaterial(mat.id, selected)}
+                        onQuantityChange={(qty) => handleQuantityChange(mat.id, qty)}
+                      />
+                    )
+                  })
+                )}
+              </div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
               Selecione os materiais gastos para abater do lucro ou manter o controle.
