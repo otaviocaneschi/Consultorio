@@ -111,4 +111,18 @@ export const medicalRecordRepository = {
     if (error) throw error
     return data as MedicalRecordAttachment
   },
+
+  async getAttachmentUrl(filePath: string): Promise<string> {
+    const { data, error } = await supabase.storage
+      .from('medical-attachments')
+      .createSignedUrl(filePath, 3600) // 1 hour
+    if (error) throw error
+    return data.signedUrl
+  },
+
+  async getTotalAttachmentSize(): Promise<number> {
+    const { data, error } = await supabase.rpc('get_total_attachment_size')
+    if (error) throw error
+    return data as number
+  },
 }

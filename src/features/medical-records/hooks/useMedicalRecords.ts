@@ -11,6 +11,13 @@ export function useMedicalRecords(patientId: string | undefined) {
   })
 }
 
+export function useStorageUsage() {
+  return useQuery({
+    queryKey: ['storage-usage'],
+    queryFn: () => medicalRecordRepository.getTotalAttachmentSize(),
+  })
+}
+
 export function useMedicalRecordMutations() {
   const queryClient = useQueryClient()
   const { user } = useAuth()

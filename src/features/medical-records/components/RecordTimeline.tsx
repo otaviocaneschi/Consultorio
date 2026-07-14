@@ -1,11 +1,51 @@
+import { useState } from 'react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { FileText, Paperclip } from 'lucide-react'
+import { FileText, Paperclip, ExternalLink, Loader2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import type { MedicalRecord } from '@/types/database.types'
+import { Button } from '@/components/ui/button'
+import type { MedicalRecord, MedicalRecordAttachment } from '@/types/database.types'
 import { PROCEDURE_CATEGORY_LABELS } from '@/types/enums'
+import { medicalRecordRepository } from '@/features/medical-records/repositories/medical-record.repository'
+import { toast } from 'sonner'
+
+function AttachmentButton({ attachment }: { attachment: MedicalRecordAttachment }) {
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleOpen = async () => {
+    try {
+      setIsLoading(true)
+      const url = await medicalRecordRepository.getAttachmentUrl(attachment.file_path)
+      window.open(url, '_blank', 'noopener,noreferrer')
+    } catch (error) {
+      console.error('Error opening attachment:', error)
+      toast.error('Erro ao abrir o anexo.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="flex items-center gap-2 h-8 text-xs font-normal"
+      onClick={handleOpen}
+      disabled={isLoading}
+      title={attachment.file_name}
+    >
+      {isLoading ? (
+        <Loader2 className="h-3 w-3 animate-spin" />
+      ) : (
+        <Paperclip className="h-3 w-3" />
+      )}
+      <span className="max-w-[150px] truncate">{attachment.file_name}</span>
+      <ExternalLink className="h-3 w-3 opacity-50" />
+    </Button>
+  )
+}
 
 interface RecordTimelineProps {
   records: MedicalRecord[]
@@ -74,9 +114,16 @@ export function RecordTimeline({ records }: RecordTimelineProps) {
                 </div>
               )}
               {record.attachments && record.attachments.length > 0 && (
-                <div className="flex items-center gap-1 text-muted-foreground">
-                  <Paperclip className="h-3 w-3" />
-                  {record.attachments.length} anexo(s)
+                <div className="flex flex-col gap-2 pt-2">
+                  <div className="flex items-center gap-1 text-sm font-medium text-muted-foreground">
+                    <Paperclip className="h-4 w-4" />
+                    {record.attachments.length} anexo{record.attachments.length !== 1 ? 's' : ''}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {record.attachments.map((attachment) => (
+                      <AttachmentButton key={attachment.id} attachment={attachment} />
+                    ))}
+                  </div>
                 </div>
               )}
             </CardContent>

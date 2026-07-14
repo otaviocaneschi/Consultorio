@@ -17,6 +17,7 @@ import { RecordForm } from '@/features/medical-records/components/RecordForm'
 import {
   useMedicalRecords,
   useMedicalRecordMutations,
+  useStorageUsage,
 } from '@/features/medical-records/hooks/useMedicalRecords'
 import { usePatient } from '@/features/patients/hooks/usePatients'
 import type { MedicalRecordFormData } from '@/features/medical-records/schemas/medical-record.schema'
@@ -26,8 +27,15 @@ export function MedicalRecordPage() {
   const { data: patient, isLoading: patientLoading } = usePatient(patientId)
   const { data: records = [], isLoading: recordsLoading } = useMedicalRecords(patientId)
   const { create, uploadAttachment } = useMedicalRecordMutations()
+  const { data: totalStorage = 0, isLoading: storageLoading } = useStorageUsage()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [lastRecordId, setLastRecordId] = useState<string | null>(null)
+
+  const MAX_STORAGE_BYTES = 1073741824 // 1GB
+  const storagePercentage = Math.min((totalStorage / MAX_STORAGE_BYTES) * 100, 100)
+  const isStorageWarning = storagePercentage > 80
+  const isStorageCritical = storagePercentage > 95
+  const isStorageFull = storagePercentage >= 98
 
   const handleSubmit = async (data: MedicalRecordFormData) => {
     try {
@@ -88,8 +96,39 @@ export function MedicalRecordPage() {
       <RecordTimeline records={records} />
 
       <div className="rounded-xl border bg-card p-4">
-        <h3 className="mb-3 font-medium">Anexar arquivos ao último registro</h3>
-        <FileUpload onChange={handleUpload} accept={{ 'image/*': [], 'application/pdf': [] }} />
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-medium">Anexar arquivos ao último registro</h3>
+            {!storageLoading && (
+              <span className="text-sm text-muted-foreground">
+                {(totalStorage / (1024 * 1024)).toFixed(1)} MB / 1024 MB
+              </span>
+            )}
+          </div>
+          {!storageLoading && (
+            <>
+              <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
+                <div 
+                  className={`h-full transition-all ${isStorageCritical ? 'bg-destructive' : isStorageWarning ? 'bg-yellow-500' : 'bg-primary'}`} 
+                  style={{ width: `${storagePercentage}%` }} 
+                />
+              </div>
+              {isStorageFull && (
+                <p className="mt-2 text-sm text-destructive font-medium">
+                  Limite de armazenamento atingido. Não é possível anexar mais arquivos.
+                </p>
+              )}
+              {isStorageWarning && !isStorageFull && (
+                <p className={`mt-2 text-sm ${isStorageCritical ? 'text-destructive' : 'text-yellow-600 dark:text-yellow-500'}`}>
+                  Atenção: O armazenamento gratuito está quase cheio.
+                </p>
+              )}
+            </>
+          )}
+        </div>
+        {!isStorageFull && (
+          <FileUpload onChange={handleUpload} accept={{ 'image/*': [], 'application/pdf': [] }} />
+        )}
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
